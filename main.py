@@ -8,10 +8,16 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from torchvision import transforms
 from PIL import Image, ImageDraw
 import uvicorn
-import subprocess
 
-# Install required packages
-# subprocess.run(["pip", "install", "python-multipart"], check=True)
+from fastapi import Depends, Header, HTTPException
+
+# Define your secret API key (can also be stored in environment variables for security)
+API_KEY = "supersecretapikey"
+
+# Dependency to check API key in header
+def verify_api_key(x_api_key: str = Header(...)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid API Key")
 
 # ---------- Config ----------
 MODEL_PATH = "persist/best_model.pth"
@@ -118,7 +124,9 @@ async def health_check():
     return {"status": "healthy", "model_loaded": True}
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    api_key: str = Depends(verify_api_key)):
     try:
         print("Received file:", file.filename)
         
